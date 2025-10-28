@@ -1,0 +1,26 @@
+# 1. Nome da sua pipeline (vai aparecer na aba "Actions")
+name: 00 - Hello World Teste
+
+# 2. Gatilho (Trigger)
+# 'workflow_dispatch' significa que ela SÓ roda quando você
+# apertar um botão manualmente no GitHub.
+on:
+  workflow_dispatch:
+
+# 3. Lista de Tarefas (Jobs)
+jobs:
+  # 3.1. Damos um nome para a nossa única tarefa
+  say-hello:
+    # 3.2. Dizemos qual "computador" vai rodar isso
+    # (usamos a máquina virtual padrão do GitHub)
+    runs-on: ubuntu-latest
+
+    # 3.3. Lista de passos que essa tarefa vai executar
+    steps:
+      # 3.3.1. Um passo simples que roda um comando no terminal
+      - name: Print Hello World
+        run: echo "Hello World! Minha primeira pipeline funcionou!"
+
+      # 3.3.2. Vamos adicionar mais um passo para provar
+      - name: Print Goodbye
+        run: echo "Adeus! Fim da pipeline."
