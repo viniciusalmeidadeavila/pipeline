@@ -1,0 +1,11 @@
+main {
+    margin: 1.5rem 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    
+    & img {
+        width: 17.875rem;
+    }
+}
