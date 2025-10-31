@@ -1,24 +1,27 @@
+# Nome da Pipeline
 name: Pipeline CI/CD Principal (Sonar + AWS S3)
 
+# Define os gatilhos (triggers)
 on:
   # Gatilho 1: Para o DEPLOY (quando o merge na main acontece)
   push:
     branches:
-      - main
+      - "main"
       
-  # Gatilho 2: Para o TESTE (quando um PR é aberto para as branches)
+  # Gatilho 2: Para o TESTE (quando um PR é aberto)
   pull_request:
     branches:
-      - main
-      - homolog
-      - develop
+      - "main"
+      - "homolog"
+      - "develop"
       
   # Gatilho 3: MANUAL (para testes)
   workflow_dispatch:
 
+# Define a lista de tarefas (jobs)
 jobs:
   # --- TAREFA 1: ANÁLISE SONARCLOUD ---
-  # Esta tarefa vai rodar em TODOS os gatilhos (push, pull_request, dispatch)
+  # Esta tarefa vai rodar em TODOS os gatilhos
   sonarcloud:
     name: Analise SonarCloud
     runs-on: ubuntu-latest
@@ -66,5 +69,6 @@ jobs:
 
       - name: Invalidar cache do CloudFront
         run: |
-          # COLOQUE SEU NOVO ID DO CLOUDFRONT AQUI
+          # ==== EDITE AQUI ====
+          # Coloque seu NOVO ID do CloudFront (o que está funcionando)
           aws cloudfront create-invalidation --distribution-id EZZTASFWAMOH --paths "/*"
