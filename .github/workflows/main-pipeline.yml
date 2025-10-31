@@ -1,0 +1,83 @@
+# Nome da Pipeline
+name: Pipeline CI/CD Principal (Sonar + AWS S3)
+
+# Define os gatilhos (triggers)
+on:
+  # Gatilho 1: Para o DEPLOY (quando o merge na main acontece)
+  push:
+    branches:
+      - "main"
+      
+  # Gatilho 2: Para o TESTE (quando um PR é aberto)
+  pull_request:
+    branches:
+      - "main"
+      - "homolog"
+      - "develop"
+      
+  # Gatilho 3: MANUAL (para testes)
+  workflow_dispatch:
+
+# Define a lista de tarefas (jobs)
+jobs:
+  # --- TAREFA 1: ANÁLISE SONARCLOUD ---
+  # Esta tarefa vai rodar em TODOS os gatilhos
+  sonarcloud:
+    name: Analise SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+        with:
+          # O Sonar precisa do histórico completo, 'fetch-depth: 0' faz isso.
+          fetch-depth: 0 
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          # Token do GitHub (automático)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Token do Sonar (que você já colocou nos Secrets)
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            # Seus dados do SonarCloud
+            -Dsonar.organization=viniciusalmeidadeavila
+            -Dsonar.projectKey=viniciusalmeidadeavila_pipeline
+
+  # --- TAREFA 2: DEPLOY NA AWS S3 ---
+  deploy:
+    name: Deploy no AWS S3
+    # 'needs: sonarcloud' -> Esta tarefa precisa que o Sonar passe
+    needs: sonarcloud
+    
+    # --- A CONDIÇÃO MAIS IMPORTANTE (Requisito 5) ---
+    # Só rode esta tarefa se o gatilho foi um PUSH para a branch MAIN
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          # Estes são os secrets que você criou na AWS (usuário IAM)
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # Sua região (informada por você)
+          aws-region: us-east-2 
+
+      - name: Enviar arquivos para o S3
+        # Este comando "sincroniza" seu código com o bucket
+        run: |
+          # Seu bucket (informado por você)
+          aws s3 sync . s3://vinicius-teste-aws-123 --delete 
+
+      - name: Invalidar cache do CloudFront
+        # Este passo é crucial para o CloudFront mostrar a nova versão
+        run: |
+          # ==== EDITE AQUI ====
+          # Coloque seu NOVO ID do CloudFront (o que está funcionando)
+          aws cloudfront create-invalidation --distribution-id EZZTASFWAMOH --paths "/*"
