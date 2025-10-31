@@ -1,0 +1,32 @@
+footer {
+    padding-left: 2rem;
+    justify-content: space-between;
+    align-items: center;
+    height: 4.5rem;
+
+    & .terms {
+        position: relative;
+        right: 3rem;
+
+        & a {
+            cursor: pointer;
+        }
+    }
+}
+
+@media (width <= 31.25rem) {
+    footer {
+        flex-direction: column;
+        justify-content: center;
+
+        & .travelgram {
+            width: 100%;
+            text-align: center;
+        }
+
+        & .terms {
+            width: 100%;
+            justify-content: end;
+        }
+    }
+}
