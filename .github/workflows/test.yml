@@ -1,0 +1,10 @@
+name: 00 - Teste Simples
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diga-oi:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "A pipeline está funcionando!"
