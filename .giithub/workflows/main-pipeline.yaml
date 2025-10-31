@@ -1,0 +1,56 @@
+# Nome da Pipeline
+name: Pipeline CI/CD Principal (Sonar + AWS S3)
+
+# Gatilho: Rodar em 'main' E TAMBÉM MANUALMENTE
+on:
+  push:
+    branches:
+      - main
+  # ADICIONE ISTO PARA PODER TESTAR MANUALMENTE
+  workflow_dispatch:
+
+# Lista de Tarefas (Jobs)
+jobs:
+  # --- TAREFA 1: ANÁLISE SONARCLOUD ---
+  sonarcloud:
+    name: Analise SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+      
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=viniciusalmeidadeavila
+            -Dsonar.projectKey=viniciusalmeidadeavila_pipeline
+
+  # --- TAREFA 2: DEPLOY NA AWS S3 (TEMPORARIAMENTE DESATIVADA) ---
+  #deploy:
+  #  name: Deploy no AWS S3
+  #  needs: sonarcloud
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - name: Checkout do código
+  #      uses: actions/checkout@v3
+  #
+  #    - name: Configurar credenciais AWS
+  #      uses: aws-actions/configure-aws-credentials@v1
+  #      with:
+  #        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #        aws-region: us-east-2
+  #
+  #    - name: Enviar arquivos para o S3
+  #      run: |
+  #        aws s3 sync . s3://vinicius-teste-aws-123 --delete
+  #
+  #    - name: Invalidar cache do CloudFront
+  #      run: |
+  #        aws cloudfront create-invalidation --distribution-id EZZTASFWAMOH --paths "/*"
