@@ -1,17 +1,24 @@
-# Nome da Pipeline
 name: Pipeline CI/CD Principal (Sonar + AWS S3)
 
-# Gatilho: Rodar em 'main' E TAMBÉM MANUALMENTE
 on:
+  # Gatilho 1: Para o DEPLOY (quando o merge na main acontece)
   push:
     branches:
       - main
-  # ADICIONE ISTO PARA PODER TESTAR MANUALMENTE
+      
+  # Gatilho 2: Para o TESTE (quando um PR é aberto para as branches)
+  pull_request:
+    branches:
+      - main
+      - homolog
+      - develop
+      
+  # Gatilho 3: MANUAL (para testes)
   workflow_dispatch:
 
-# Lista de Tarefas (Jobs)
 jobs:
   # --- TAREFA 1: ANÁLISE SONARCLOUD ---
+  # Esta tarefa vai rodar em TODOS os gatilhos (push, pull_request, dispatch)
   sonarcloud:
     name: Analise SonarCloud
     runs-on: ubuntu-latest
@@ -31,26 +38,33 @@ jobs:
             -Dsonar.organization=viniciusalmeidadeavila
             -Dsonar.projectKey=viniciusalmeidadeavila_pipeline
 
-  # --- TAREFA 2: DEPLOY NA AWS S3 (TEMPORARIAMENTE DESATIVADA) ---
-  #deploy:
-  #  name: Deploy no AWS S3
-  #  needs: sonarcloud
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - name: Checkout do código
-  #      uses: actions/checkout@v3
-  #
-  #    - name: Configurar credenciais AWS
-  #      uses: aws-actions/configure-aws-credentials@v1
-  #      with:
-  #        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #        aws-region: us-east-2
-  #
-  #    - name: Enviar arquivos para o S3
-  #      run: |
-  #        aws s3 sync . s3://vinicius-teste-aws-123 --delete
-  #
-  #    - name: Invalidar cache do CloudFront
-  #      run: |
-  #        aws cloudfront create-invalidation --distribution-id EZZTASFWAMOH --paths "/*"
+  # --- TAREFA 2: DEPLOY NA AWS S3 ---
+  deploy:
+    name: Deploy no AWS S3
+    # 'needs: sonarcloud' -> Esta tarefa precisa que o Sonar passe
+    needs: sonarcloud
+    
+    # --- A CONDIÇÃO MAIS IMPORTANTE ---
+    # Só rode esta tarefa se o gatilho foi um PUSH para a branch MAIN
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar credenciais AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2 # Sua região
+
+      - name: Enviar arquivos para o S3
+        run: |
+          aws s3 sync . s3://vinicius-teste-aws-123 --delete # Seu bucket
+
+      - name: Invalidar cache do CloudFront
+        run: |
+          # COLOQUE SEU NOVO ID DO CLOUDFRONT AQUI
+          aws cloudfront create-invalidation --distribution-id EZZTASFWAMOH --paths "/*"
